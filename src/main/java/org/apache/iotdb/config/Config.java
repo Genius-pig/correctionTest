@@ -3,6 +3,42 @@ package org.apache.iotdb.config;
 public class Config {
   private String INSERT_MODE = Constants.SEQUENCE;
   private int Loop = 100;
+  private int sensorNumber = 10;
+  private int storageGroupNumber = 10;
+  private int deviceNumber = 10;
+  private int maxRowNumber = 100000;
+
+  public int getSensorNumber() {
+    return sensorNumber;
+  }
+
+  public void setSensorNumber(int sensorNumber) {
+    this.sensorNumber = sensorNumber;
+  }
+
+  public int getStorageGroupNumber() {
+    return storageGroupNumber;
+  }
+
+  public void setStorageGroupNumber(int storageGroupNumber) {
+    this.storageGroupNumber = storageGroupNumber;
+  }
+
+  public int getDeviceNumber() {
+    return deviceNumber;
+  }
+
+  public void setDeviceNumber(int deviceNumber) {
+    this.deviceNumber = deviceNumber;
+  }
+
+  public void setMaxRowNumber(int maxRowNumber) {
+    this.maxRowNumber = maxRowNumber;
+  }
+
+  public int getMaxRowNumber() {
+    return maxRowNumber;
+  }
 
   public int getLoop() {
     return Loop;

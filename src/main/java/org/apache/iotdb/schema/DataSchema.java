@@ -1,6 +1,7 @@
 package org.apache.iotdb.schema;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
@@ -14,5 +15,9 @@ public class DataSchema {
       schemaList.add(new MeasurementSchema("s" + sensorNumber, TSDataType.INT64));
     }
     return schemaList;
+  }
+
+  public List<MeasurementSchema> getSingleSchemaList(int n) {
+    return Collections.singletonList(new MeasurementSchema("s" + n, TSDataType.INT64));
   }
 }
