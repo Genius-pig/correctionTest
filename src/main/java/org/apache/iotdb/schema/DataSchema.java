@@ -11,8 +11,10 @@ public class DataSchema {
   List<MeasurementSchema> schemaList = new ArrayList<>();
 
   public List<MeasurementSchema> getSchemaList(int sensorNumber) {
-    for(int i = 1; i < sensorNumber; i++) {
-      schemaList.add(new MeasurementSchema("s" + sensorNumber, TSDataType.INT64));
+    if (schemaList.size() != sensorNumber) {
+      for (int i = 1; i <= sensorNumber; i++) {
+        schemaList.add(new MeasurementSchema("s" + i, TSDataType.INT64));
+      }
     }
     return schemaList;
   }
