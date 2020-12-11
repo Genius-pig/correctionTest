@@ -146,6 +146,7 @@ public class SingleClient {
             for(Field field : fields) {
               if(record.getTimestamp() + 1 != field.getLongV()) {
                 logger.error("Results of sql: " + sql + " isn't correct");
+                isCorrect = false;
                 break;
               }
             }
@@ -153,12 +154,20 @@ public class SingleClient {
             for(Field field : fields) {
               if(record.getTimestamp() != field.getLongV()) {
                 logger.error("Results of sql: " + sql + " isn't correct");
+                isCorrect = false;
                 break;
               }
             }
           }
+          if(!isCorrect) {
+            break;
+          }
         }
-        logger.info("Loop " + count + " result is correct");
+        if(isCorrect) {
+          logger.info("Loop " + count + " result is correct");
+        } else {
+          isCorrect = true;
+        }
         break;
       case Constants.DELETION:
         sql = generateRawDataQuerySql(true, true, count);
@@ -168,15 +177,27 @@ public class SingleClient {
           List<Field> fields = record.getFields();
           if(record.getTimestamp() >= randomN - 999 && record.getTimestamp() <= randomN) {
             logger.error("Results of sql: " + sql + " isn't correct");
+            isCorrect = false;
+            break;
           } else {
             for(Field field : fields) {
               if(record.getTimestamp() != field.getLongV()) {
                 logger.error("Results of sql: " + sql + " isn't correct");
+                isCorrect = false;
                 break;
               }
             }
           }
+          if(!isCorrect) {
+            break;
+          }
         }
+        if(isCorrect) {
+          logger.info("Loop " + count + " result is correct");
+        } else {
+          isCorrect = true;
+        }
+        break;
     }
   }
 
@@ -255,12 +276,10 @@ public class SingleClient {
     int randomSgNumber = random.nextInt(config.getStorageGroupNumber()) + 1;
     randomDevice = "root.sg" + randomSgNumber + ".d" + randomDNumber;
     randomSensor = "s" + randomSNumber;
-    Tablet tablet = new Tablet(randomDevice, dataSchema.getSingleSchemaList(randomSgNumber), 1000);
+    Tablet tablet = new Tablet(randomDevice, dataSchema.getSingleSchemaList(randomSNumber), 1000);
     for(int k = randomN - 999; k <= randomN; k++) {
       tablet.addTimestamp(tablet.rowSize, k);
-      for(int m = 1; m <= config.getSensorNumber(); m++) {
-        tablet.addValue(randomSensor, tablet.rowSize, k + 1);
-      }
+      tablet.addValue(randomSensor, tablet.rowSize, (long) (k + 1));
       tablet.rowSize++;
     }
     session.insertTablet(tablet);
@@ -311,7 +330,7 @@ public class SingleClient {
         sql.append(randomSensor).append(" ");
         sql.append("from ").append(randomDevice);
         // this is a last point of time interval where this test choose to query data
-        int pointN = random.nextInt(1000) + 1 + randomN - 1000 + count * config.getMaxRowNumber();
+        int pointN = random.nextInt(1000) + 1 + randomN - 1000;
         if(pointN - 1000 < count * config.getMaxRowNumber()) {
           pointN = count * config.getMaxRowNumber() + 1000;
         }
