@@ -23,6 +23,8 @@ public class SingleClient {
   String randomDevice;
   String randomSensor;
   private final Random random = new Random();
+  private int lastTimePoint;
+  private boolean isCorrect = true;
 
 
   //this is a last point of time interval where this test choose to delete or insert unsequence data
@@ -57,11 +59,11 @@ public class SingleClient {
           for(int m = 1; m <= config.getSensorNumber(); m++) {
             tablet.addValue("s" + m, tablet.rowSize, (long) k);
           }
+          tablet.rowSize++;
           if(k % 1000 == 0) {
             session.insertTablet(tablet);
             tablet = new Tablet(device, dataSchema.getSchemaList(config.getSensorNumber()), 1000);
           }
-          tablet.rowSize++;
         }
         session.insertTablet(tablet);
       }
@@ -83,38 +85,56 @@ public class SingleClient {
       case Constants.SEQUENCE:
         String sql = generateRawDataQuerySql(true, true,count);
         SessionDataSet dataSet = session.executeQueryStatement(sql);
-        while(dataSet.hasNext()) {
-          RowRecord record = dataSet.next();
-          List<Field> fields = record.getFields();
-          if(record.getTimestamp() != fields.get(0).getLongV()) {
-            logger.error("Results of sql: " + sql + " isn't correct");
-          }
-        }
+        checkRawData(dataSet, sql);
         sql = generateRawDataQuerySql(true, false, count);
         dataSet = session.executeQueryStatement(sql);
-        while(dataSet.hasNext()) {
-          RowRecord record = dataSet.next();
-          List<Field> fields = record.getFields();
-          for (Field field : fields) {
-            if (record.getTimestamp() != field.getLongV()) {
-              logger.error("Results of sql: " + sql + " isn't correct");
-              break;
-            }
-          }
-        }
+        checkRawData(dataSet,sql);
         sql = generateRawDataQuerySql(false, true, count);
         dataSet = session.executeQueryStatement(sql);
-        while(dataSet.hasNext()) {
-          RowRecord record = dataSet.next();
-          List<Field> fields = record.getFields();
-          for (Field field : fields) {
-            if (record.getTimestamp() != field.getLongV()) {
-              logger.error("Results of sql: " + sql + " isn't correct");
-              break;
-            }
-          }
+        checkRawData(dataSet,sql);
+        sql = generateCountAggregatedQuerySql(true, true, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData(1000, dataSet, sql);
+        sql = generateCountAggregatedQuerySql(true, false, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData(1000, dataSet, sql);
+        sql = generateCountAggregatedQuerySql(false, true, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData(1000, dataSet, sql);
+        sql = generateLastValueAggregatedQuerySql(true, true, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData(lastTimePoint, dataSet, sql);
+        sql = generateLastValueAggregatedQuerySql(true, false, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData(lastTimePoint, dataSet, sql);
+        sql = generateLastValueAggregatedQuerySql(false, true, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData(lastTimePoint, dataSet, sql);
+        sql = generateCountAggregatedQuerySqlAllTime(true, true, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData((1 + count) * config.getMaxRowNumber(), dataSet, sql);
+        sql = generateCountAggregatedQuerySqlAllTime(true, false, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData((1 + count) * config.getMaxRowNumber(), dataSet, sql);
+        sql = generateCountAggregatedQuerySqlAllTime(false, true, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData((1 + count) * config.getMaxRowNumber(), dataSet, sql);
+        sql = generateLastValueAggregatedQuerySqlAllTime(true, true, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData((1 + count) * config.getMaxRowNumber(), dataSet, sql);
+        sql = generateLastValueAggregatedQuerySqlAllTime(true, false, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData((1 + count) * config.getMaxRowNumber(), dataSet, sql);
+        sql = generateLastValueAggregatedQuerySqlAllTime(false, true, count);
+        dataSet = session.executeQueryStatement(sql);
+        checkAggregatedData((1 + count) * config.getMaxRowNumber(), dataSet, sql);
+        sql = generateCountGroupByQuerySql(true, true, count);
+        checkAggregatedData(100, dataSet, sql);
+        if(isCorrect) {
+          logger.info("Loop " + count + " result is correct");
+        } else {
+          isCorrect = true;
         }
-        logger.info("Loop " + count + " result is correct");
         break;
       case Constants.UNSEQUENCE:
         sql = generateRawDataQuerySql(true, true, count);
@@ -159,6 +179,55 @@ public class SingleClient {
         }
     }
   }
+
+  private void checkRawData(SessionDataSet dataSet, String sql)
+      throws StatementExecutionException, IoTDBConnectionException {
+    while(dataSet.hasNext()) {
+      RowRecord record = dataSet.next();
+      List<Field> fields = record.getFields();
+      for (int i = 0; i < fields.size(); i++) {
+        if(fields.get(i).isNull()) {
+          logger.error("Results of sql: " + sql + " isn't correct");
+          logger.error(dataSet.getColumnNames().get(i + 1) + " of expected result is " + record.getTimestamp() + ", but in fact null");
+          isCorrect = false;
+          break;
+        } else if (record.getTimestamp() != fields.get(i).getLongV()) {
+          logger.error("Results of sql: " + sql + " isn't correct");
+          logger.error(dataSet.getColumnNames().get(i + 1) + " of expected result is "  + record.getTimestamp() +  ", but in fact " + fields.get(i).getLongV());
+          isCorrect = false;
+          break;
+        }
+      }
+      if(!isCorrect) {
+        break;
+      }
+    }
+  }
+
+  private void checkAggregatedData(long expected, SessionDataSet dataSet, String sql)
+      throws StatementExecutionException, IoTDBConnectionException {
+    while(dataSet.hasNext()) {
+      RowRecord record = dataSet.next();
+      List<Field> fields = record.getFields();
+      for (int i = 0; i < fields.size(); i++) {
+        if(fields.get(i).isNull()) {
+          logger.error("Results of sql: " + sql + " isn't correct");
+          logger.error(dataSet.getColumnNames().get(i) + " of expected result is " + expected + ", but in fact null");
+          isCorrect = false;
+          break;
+        } else if (fields.get(i).getLongV() != expected) {
+          logger.error("Results of sql: " + sql + " isn't correct");
+          logger.error(dataSet.getColumnNames().get(i) + " of expected result is "  + expected +  ", but in fact " + fields.get(i).getLongV());
+          isCorrect = false;
+          break;
+        }
+      }
+      if(!isCorrect) {
+        break;
+      }
+    }
+  }
+
 
   private void deleteData(int count) throws StatementExecutionException, IoTDBConnectionException {
     randomN = random.nextInt(config.getMaxRowNumber()) + 1 + count * config.getMaxRowNumber();
@@ -285,12 +354,12 @@ public class SingleClient {
           sql.append(" ");
         }
         // pick a time point
-        int point =
+        lastTimePoint =
             random.nextInt(config.getMaxRowNumber()) + 1 + count * config.getMaxRowNumber();
-        if (point - 1000 < count * config.getMaxRowNumber()) {
-          point = count * config.getMaxRowNumber() + 1000;
+        if (lastTimePoint - 1000 < count * config.getMaxRowNumber()) {
+          lastTimePoint = count * config.getMaxRowNumber() + 1000;
         }
-        sql.append(" where time >= ").append(point - 999).append(" and time <= ").append(point);
+        sql.append(" where time >= ").append(lastTimePoint - 999).append(" and time <= ").append(lastTimePoint);
         break;
       case Constants.DELETION:
       case Constants.UNSEQUENCE:

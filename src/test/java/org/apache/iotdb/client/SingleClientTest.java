@@ -13,6 +13,9 @@ public class SingleClientTest {
     System.out.println(singleClient.generateRawDataQuerySql(true, true, 0));
     System.out.println(singleClient.generateRawDataQuerySql(true, false, 0));
     System.out.println(singleClient.generateRawDataQuerySql(false, true, 0));
+    System.out.println(singleClient.generateCountAggregatedQuerySql(true, true, 0));
+    System.out.println(singleClient.generateCountAggregatedQuerySql(false, true, 0));
+    System.out.println(singleClient.generateCountAggregatedQuerySql(true, false, 0));
   }
 
 }
