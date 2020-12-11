@@ -12,5 +12,4 @@ public class App {
     singleClient.open("127.0.0.1", 6667, "root", "root");
     singleClient.start();
   }
-
 }

@@ -1,7 +1,7 @@
 package org.apache.iotdb.config;
 
 public class Config {
-  private String INSERT_MODE = Constants.DELETION;
+  private String INSERT_MODE = Constants.SEQUENCE;
   private int Loop = 2;
   private int sensorNumber = 10;
   private int storageGroupNumber = 10;
