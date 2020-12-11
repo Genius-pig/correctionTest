@@ -188,12 +188,12 @@ public class SingleClient {
       for (int i = 0; i < fields.size(); i++) {
         if(fields.get(i).isNull()) {
           logger.error("Results of sql: " + sql + " isn't correct");
-          logger.error(dataSet.getColumnNames().get(i + 1) + " of expected result is " + record.getTimestamp() + ", but in fact null");
+          logger.error(dataSet.getColumnNames().get(i + 1) + " at time " + record.getTimestamp() + " of expected result is " + record.getTimestamp() + ", but in fact null");
           isCorrect = false;
           break;
         } else if (record.getTimestamp() != fields.get(i).getLongV()) {
           logger.error("Results of sql: " + sql + " isn't correct");
-          logger.error(dataSet.getColumnNames().get(i + 1) + " of expected result is "  + record.getTimestamp() +  ", but in fact " + fields.get(i).getLongV());
+          logger.error(dataSet.getColumnNames().get(i + 1) + " at time " + record.getTimestamp() + " of expected result is "  + record.getTimestamp() +  ", but in fact " + fields.get(i).getLongV());
           isCorrect = false;
           break;
         }
