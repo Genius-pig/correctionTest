@@ -7,7 +7,7 @@ import org.apache.iotdb.config.Config;
 import org.apache.iotdb.config.Constants;
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.StatementExecutionException;
-import org.apache.iotdb.schema.DataSchema;
+import org.apache.iotdb.schema.DataSchemaUtil;
 import org.apache.iotdb.session.Session;
 import org.apache.iotdb.session.SessionDataSet;
 import org.apache.iotdb.tsfile.read.common.Field;
@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 public class SingleClient {
   private Session session;
-  DataSchema dataSchema;
   Config config = Config.getConfig();
   String randomDevice;
   String randomSensor;
@@ -33,7 +32,7 @@ public class SingleClient {
   private static final Logger logger = LoggerFactory.getLogger(SingleClient.class);
 
   public SingleClient() {
-    dataSchema = new DataSchema();
+
   }
 
   public void open(String url, int port, String username, String password)
@@ -53,7 +52,7 @@ public class SingleClient {
     for(int i = 1; i <= config.getStorageGroupNumber(); i++) {
       for(int j = 1; j <= config.getDeviceNumber(); j++) {
         String device = "root.sg" + i + ".d" + j;
-        Tablet tablet = new Tablet(device, dataSchema.getSchemaList(config.getSensorNumber()), 1000);
+        Tablet tablet = new Tablet(device, DataSchemaUtil.getSchemaList(config.getSensorNumber()), 1000);
         for(int k = 1 + count* config.getMaxRowNumber(); k <= (1 + count) * config.getMaxRowNumber() ; k++) {
           tablet.addTimestamp(tablet.rowSize, k);
           for(int m = 1; m <= config.getSensorNumber(); m++) {
@@ -62,7 +61,7 @@ public class SingleClient {
           tablet.rowSize++;
           if(k % 1000 == 0) {
             session.insertTablet(tablet);
-            tablet = new Tablet(device, dataSchema.getSchemaList(config.getSensorNumber()), 1000);
+            tablet = new Tablet(device, DataSchemaUtil.getSchemaList(config.getSensorNumber()), 1000);
           }
         }
         session.insertTablet(tablet);
@@ -261,7 +260,7 @@ public class SingleClient {
     randomDevice = "root.sg" + randomSgNumber + ".d" + randomDNumber;
     randomSensor = "s" + randomSNumber;
     List<String> paths = new ArrayList<>();
-    paths.add(randomDevice + randomSensor);
+    paths.add(randomDevice + "." + randomSensor);
     session.deleteData(paths, randomN - 999, randomN);
   }
 
@@ -276,7 +275,7 @@ public class SingleClient {
     int randomSgNumber = random.nextInt(config.getStorageGroupNumber()) + 1;
     randomDevice = "root.sg" + randomSgNumber + ".d" + randomDNumber;
     randomSensor = "s" + randomSNumber;
-    Tablet tablet = new Tablet(randomDevice, dataSchema.getSingleSchemaList(randomSNumber), 1000);
+    Tablet tablet = new Tablet(randomDevice, DataSchemaUtil.getSingleSchemaList(randomSNumber), 1000);
     for(int k = randomN - 999; k <= randomN; k++) {
       tablet.addTimestamp(tablet.rowSize, k);
       tablet.addValue(randomSensor, tablet.rowSize, (long) (k + 1));
