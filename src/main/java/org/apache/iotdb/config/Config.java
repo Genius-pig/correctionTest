@@ -7,6 +7,42 @@ public class Config {
   private int storageGroupNumber = 10;
   private int deviceNumber = 10;
   private int maxRowNumber = 100000;
+  private String host = "127.0.0.1";
+  private int port = 6667;
+  private String username = "root";
+  private String password = "root";
+
+  public void setHost(String host) {
+    this.host = host;
+  }
+
+  public String getHost() {
+    return host;
+  }
+
+  public void setPort(int port) {
+    this.port = port;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
+  public String getUsername() {
+    return username;
+  }
 
   public int getSensorNumber() {
     return sensorNumber;
